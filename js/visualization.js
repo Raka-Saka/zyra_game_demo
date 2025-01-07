@@ -663,9 +663,88 @@ function update() {
     requestAnimationFrame(update);
 }
 
-// Initialize
-updateWorldPanel();
-update(); 
+// Initialize factions
+function initializeFactions() {
+    createFaction('merchants');
+    createFaction('nobles');
+    createFaction('guards');
+    createFaction('cultists');
+}
+
+// Initialize places
+function initializePlaces() {
+    const placeTypes = ['tavern', 'marketplace', 'temple', 'plaza', 'garden', 'library'];
+    for (let i = 0; i < 6; i++) {
+        addPlace(placeTypes[i]);
+    }
+}
+
+// Initialize NPCs
+function initializeNPCs() {
+    for (let i = 0; i < 15; i++) {
+        addNPC();
+    }
+}
+
+// Game loop
+function gameLoop() {
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Update all entities
+    update();
+    
+    // Draw everything
+    places.forEach(place => place.draw());
+    npcs.forEach(npc => npc.draw());
+    events.forEach(event => event.draw());
+    
+    // Update UI
+    updateFactionPanel();
+    updateWorldPanel();
+    updateCurrentEventDisplay();
+    
+    // Continue loop
+    requestAnimationFrame(gameLoop);
+}
+
+// Start the simulation
+window.onload = function() {
+    // Initialize everything
+    initializeFactions();
+    initializePlaces();
+    initializeNPCs();
+    
+    // Start the game loop
+    gameLoop();
+    
+    // Update world state periodically
+    setInterval(() => {
+        // Change weather randomly
+        if (Math.random() < 0.001) {
+            const weathers = ['sunny', 'rainy', 'stormy'];
+            setWeather(weathers[Math.floor(Math.random() * weathers.length)]);
+        }
+        
+        // Change time of day
+        if (Math.random() < 0.0005) {
+            toggleDayNight();
+        }
+        
+        // Change season
+        if (Math.random() < 0.0001) {
+            nextSeason();
+        }
+    }, 1000);
+    
+    // Generate events periodically
+    setInterval(() => {
+        if (Math.random() < 0.1) {
+            const eventTypes = ['celebration', 'conflict', 'trade', 'performance'];
+            triggerEvent(eventTypes[Math.floor(Math.random() * eventTypes.length)]);
+        }
+    }, 5000);
+};
 
 // Add CSS for story progress bar
 const style = document.createElement('style');
