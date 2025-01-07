@@ -708,13 +708,16 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Start the simulation
+// Initialize everything when the window loads
 window.onload = function() {
+    console.log('Initializing visualization...');
+    
     // Initialize everything
     initializeFactions();
     initializePlaces();
     initializeNPCs();
     
+    console.log('Starting game loop...');
     // Start the game loop
     gameLoop();
     
@@ -744,6 +747,8 @@ window.onload = function() {
             triggerEvent(eventTypes[Math.floor(Math.random() * eventTypes.length)]);
         }
     }, 5000);
+    
+    console.log('Initialization complete!');
 };
 
 // Add CSS for story progress bar
