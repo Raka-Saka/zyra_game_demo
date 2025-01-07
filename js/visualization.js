@@ -574,7 +574,7 @@ function clearAll() {
 }
 
 // Initialize narrative agent
-const narrativeAgent = new NarrativeAgent();
+let narrativeAgent;
 
 function updateCurrentEventDisplay() {
     const currentEventDiv = document.getElementById('currentEvent');
@@ -631,7 +631,8 @@ function updateCurrentEventDisplay() {
     }
 }
 
-function update() {
+// Game loop (removing duplicate update calls)
+function gameLoop() {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
@@ -648,19 +649,28 @@ function update() {
     });
     
     // Update and draw events
-    events.forEach((event, index) => {
+    for (let i = events.length - 1; i >= 0; i--) {
+        const event = events[i];
         event.update();
         event.draw();
         if (event.duration <= 0) {
-            events.splice(index, 1);
+            events.splice(i, 1);
         }
-    });
+    }
     
-    // Update displays
+    // Update UI panels
+    updateFactionPanel();
     updateWorldPanel();
     updateCurrentEventDisplay();
     
-    requestAnimationFrame(update);
+    // Update stats
+    document.getElementById('npcCount').textContent = npcs.length;
+    document.getElementById('placeCount').textContent = places.length;
+    document.getElementById('eventCount').textContent = events.length;
+    document.getElementById('factionCount').textContent = factions.size;
+    
+    // Continue loop
+    requestAnimationFrame(gameLoop);
 }
 
 // Initialize factions
@@ -686,36 +696,28 @@ function initializeNPCs() {
     }
 }
 
-// Game loop
-function gameLoop() {
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Update all entities
-    update();
-    
-    // Draw everything
-    places.forEach(place => place.draw());
-    npcs.forEach(npc => npc.draw());
-    events.forEach(event => event.draw());
-    
-    // Update UI
-    updateFactionPanel();
-    updateWorldPanel();
-    updateCurrentEventDisplay();
-    
-    // Continue loop
-    requestAnimationFrame(gameLoop);
-}
-
 // Initialize everything when the window loads
 window.onload = function() {
     console.log('Initializing visualization...');
     
-    // Initialize everything
+    // Create narrative agent first
+    narrativeAgent = new NarrativeAgent();
+    console.log('Narrative agent created');
+    
+    // Initialize core systems
     initializeFactions();
+    console.log('Factions initialized:', factions.size);
+    
     initializePlaces();
+    console.log('Places initialized:', places.length);
+    
     initializeNPCs();
+    console.log('NPCs initialized:', npcs.length);
+    
+    // Initial UI update
+    updateFactionPanel();
+    updateWorldPanel();
+    updateCurrentEventDisplay();
     
     console.log('Starting game loop...');
     // Start the game loop
