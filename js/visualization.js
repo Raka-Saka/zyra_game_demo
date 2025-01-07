@@ -473,9 +473,15 @@ function createFaction(type) {
 }
 
 function updateFactionPanel() {
+    console.log('Updating faction panel...');
     const factionList = document.getElementById('factionList');
+    if (!factionList) {
+        console.error('Faction list element not found!');
+        return;
+    }
     factionList.innerHTML = '';
     
+    console.log('Current factions:', Array.from(factions.keys()));
     factions.forEach((faction, type) => {
         const li = document.createElement('li');
         li.className = 'faction-item';
@@ -493,20 +499,25 @@ function updateFactionPanel() {
         `;
         factionList.appendChild(li);
     });
+    console.log('Faction panel updated');
 }
 
 function updateWorldPanel() {
+    console.log('Updating world panel...');
     const worldPanel = document.getElementById('worldPanel');
     const storylineInfo = document.getElementById('storylineInfo');
     
+    if (!worldPanel || !storylineInfo) {
+        console.error('World panel elements not found!');
+        return;
+    }
+    
     if (narrativeAgent.currentStoryline) {
         const storyline = narrativeAgent.currentStoryline;
-        const currentPhase = storyline.phases[narrativeAgent.storyPhase] || storyline.phases[storyline.phases.length - 1];
-        
         storylineInfo.innerHTML = `
             <h4>Current Story: ${storyline.title}</h4>
             <div>Progress: ${Math.floor(narrativeAgent.storylineProgress * 100)}%</div>
-            <div>Phase: ${currentPhase.type} (${currentPhase.count} events needed)</div>
+            <div>Phase: ${narrativeAgent.storyPhase.toFixed(3)}</div>
             <div class="story-progress">
                 <div class="progress-bar" style="width: ${narrativeAgent.storylineProgress * 100}%"></div>
             </div>
@@ -514,6 +525,7 @@ function updateWorldPanel() {
     } else {
         storylineInfo.innerHTML = '<div>No active storyline</div>';
     }
+    console.log('World panel updated');
 }
 
 function addNPC() {
@@ -631,7 +643,7 @@ function updateCurrentEventDisplay() {
     }
 }
 
-// Game loop (removing duplicate update calls)
+// Game loop
 function gameLoop() {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
