@@ -1,3 +1,130 @@
+// Import WASM module
+import init, { AIAgent } from '../wasm/ai_agents_wasm.js';
+
+// Initialize WASM
+let wasmModule;
+init().then(module => {
+    wasmModule = module;
+    console.log('WASM module loaded');
+}).catch(err => {
+    console.error('Failed to load WASM module:', err);
+});
+
+// AI Agent management
+class AIAgentManager {
+    constructor() {
+        this.agents = new Map();
+        this.ws = new WebSocket('ws://localhost:8081');
+        
+        this.ws.onopen = () => {
+            console.log('Connected to AI server');
+        };
+        
+        this.ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            this.handleServerMessage(data);
+        };
+    }
+    
+    createAgent(npc) {
+        if (!wasmModule) {
+            console.warn('WASM module not loaded yet');
+            return;
+        }
+        
+        const agent = new AIAgent();
+        this.agents.set(npc.id, agent);
+        console.log('Created new AI agent for NPC:', npc.id);
+    }
+    
+    updateAgent(npc) {
+        const agent = this.agents.get(npc.id);
+        if (!agent) {
+            this.createAgent(npc);
+            return;
+        }
+        
+        // Create world state for the agent
+        const worldState = {
+            npcs: npcs.map(n => ({
+                id: n.id,
+                position: { x: n.x, y: n.y },
+                faction: n.faction,
+                emotions: n.emotions
+            })),
+            places: places.map(p => ({
+                type: p.type,
+                position: { x: p.x, y: p.y },
+                controlledBy: p.controlledBy
+            })),
+            events: events.map(e => ({
+                type: e.type,
+                position: { x: e.x, y: e.y },
+                duration: e.duration
+            })),
+            time: Date.now(),
+            weather: worldState.weather
+        };
+        
+        try {
+            // Get decision from AI agent
+            const decision = agent.update(worldState);
+            
+            // Apply decision to NPC
+            this.applyDecision(npc, decision);
+            
+            // Send update to server
+            this.ws.send(JSON.stringify({
+                type: 'update',
+                data: {
+                    agentId: npc.id,
+                    decision: decision
+                }
+            }));
+        } catch (err) {
+            console.error('Error updating AI agent:', err);
+        }
+    }
+    
+    applyDecision(npc, decision) {
+        switch (decision.action_type) {
+            case 'move':
+                if (decision.target) {
+                    const target = JSON.parse(decision.target);
+                    npc.targetX = target.x;
+                    npc.targetY = target.y;
+                }
+                break;
+            case 'interact':
+                // Handle NPC interactions
+                break;
+            case 'join_faction':
+                if (decision.target) {
+                    npc.joinFaction(decision.target);
+                }
+                break;
+            default:
+                console.warn('Unknown action type:', decision.action_type);
+        }
+    }
+    
+    handleServerMessage(data) {
+        switch (data.type) {
+            case 'agent_update':
+                console.log('Received agent update:', data);
+                break;
+            case 'event_response':
+                console.log('Received event response:', data);
+                break;
+            default:
+                console.warn('Unknown message type:', data.type);
+        }
+    }
+}
+
+// Create AI agent manager
+const aiManager = new AIAgentManager();
+
 // Canvas setup
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
@@ -54,6 +181,9 @@ class NPC {
     }
 
     update() {
+        // Update AI agent
+        aiManager.updateAgent(this);
+        
         // Move towards target
         const dx = this.targetX - this.x;
         const dy = this.targetY - this.y;
